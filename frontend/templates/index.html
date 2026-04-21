@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriCompare</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">NutriCompare</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" type="text" placeholder="Search foods (e.g. apple, chicken, milk)" autocomplete="off">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="browse">
+      <h1>Browse</h1>
+      <div id="category-grid" class="category-grid"></div>
+    </section>
+
+    <section class="explore">
+      <h2 id="explore-title">Explore Food Near You</h2>
+      <div id="food-grid" class="food-grid"></div>
+    </section>
+  </main>
+
+  <!-- Food detail modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <button id="modal-close" class="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
