@@ -15,11 +15,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python setup_db.py
-python app.py
+uvicorn app:app --port 5001 --reload
 ```
 
-Open http://127.0.0.1:5001
+Open http://127.0.0.1:5001 (and http://127.0.0.1:5001/docs for the Swagger UI).
 
 ## Files
 - `ddl/` — schema, data, queries (Phase 1–3)
-- `frontend/` — Flask app (Phase 4)
+- `frontend/` — FastAPI app (Phase 4)
