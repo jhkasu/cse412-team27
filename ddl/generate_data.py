@@ -5,40 +5,64 @@ import requests
 API_KEY = "y0fyjw8neebyEYKO7eD2yauejiaTW0eHzU8RfGlV"
 
 NUM_USERS = 50
-NUM_FOODS = 20
 NUM_RELATIONS = 100
+PAGE_SIZE = 200
+
+SEARCH_QUERIES = [
+    "fruit", "vegetable", "meat", "chicken", "fish",
+    "dairy", "bread", "snack", "drink", "dessert",
+]
 
 
 #food data
 def fetch_food_data():
-    url = f"https://api.nal.usda.gov/fdc/v1/foods/search?query=healthy&api_key={API_KEY}"
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-
     foods = []
     nutrients = []
     categories = {}
     category_counter = 1
+    seen_fdc_ids = set()
 
-    for item in data.get("foods", [])[:NUM_FOODS]:
-        fdc_id = item["fdcId"]
-        description = item["description"].replace("'", "''")
-        data_type = item.get("dataType", "Unknown")
-        category_name = item.get("foodCategory", "Unknown").replace("'", "''")
+    for query in SEARCH_QUERIES:
+        print(f"  Fetching '{query}'...")
+        url = (
+            f"https://api.nal.usda.gov/fdc/v1/foods/search"
+            f"?query={query}&pageSize={PAGE_SIZE}&api_key={API_KEY}"
+        )
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        data = response.json()
 
-        if category_name not in categories:
-            categories[category_name] = category_counter
-            category_counter += 1
+        for item in data.get("foods", []):
+            fdc_id = item["fdcId"]
+            if fdc_id in seen_fdc_ids:
+                continue
+            seen_fdc_ids.add(fdc_id)
 
-        category_id = categories[category_name]
-        foods.append((fdc_id, data_type, description, category_id))
+            raw_desc = item["description"]
+            data_type = item.get("dataType", "Unknown")
+            # For Branded foods, USDA puts the real product info in brandOwner/brandName
+            # while `description` is just a generic word like "BREAD". Prepend the brand
+            # so the user sees "WONDER BREAD" instead of 15 identical "BREAD" cards.
+            if data_type == "Branded":
+                brand = item.get("brandName") or item.get("brandOwner") or ""
+                if brand and brand.upper() not in raw_desc.upper():
+                    raw_desc = f"{brand} {raw_desc}"
+            description = raw_desc.replace("'", "''")[:250]
+            category_name = item.get("foodCategory", "Unknown").replace("'", "''")
 
-        for nutrient in item.get("foodNutrients", []):
-            name = nutrient["nutrientName"].replace("'", "''")
-            value = nutrient.get("value", 0) or 0
-            nutrients.append((name, value, fdc_id))
+            if category_name not in categories:
+                categories[category_name] = category_counter
+                category_counter += 1
 
+            category_id = categories[category_name]
+            foods.append((fdc_id, data_type, description, category_id))
+
+            for nutrient in item.get("foodNutrients", []):
+                name = nutrient["nutrientName"].replace("'", "''")
+                value = nutrient.get("value", 0) or 0
+                nutrients.append((name, value, fdc_id))
+
+    print(f"  Total: {len(foods)} foods, {len(categories)} categories, {len(nutrients)} nutrients")
     return foods, nutrients, categories
 
 
