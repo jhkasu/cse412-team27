@@ -9,7 +9,6 @@ Browse, search, and compare USDA food nutrition data.
 Postgres must be running locally first (`pg_isready` should say "accepting connections").
 
 ```bash
-git checkout flask-frontend
 cd frontend
 python3 -m venv .venv
 source .venv/bin/activate
