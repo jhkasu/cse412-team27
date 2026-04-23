@@ -9,7 +9,7 @@ Browse, search, and compare USDA food nutrition data.
 Postgres must be running locally first (`pg_isready` should say "accepting connections").
 
 ```bash
-cd frontend
+cd backend
 
 # create project-local Python env
 python3 -m venv .venv
@@ -31,4 +31,4 @@ Open http://127.0.0.1:5001 (and http://127.0.0.1:5001/docs for the Swagger UI).
 
 ## Files
 - `ddl/` — schema, data, queries (Phase 1–3)
-- `frontend/` — FastAPI app (Phase 4)
+- `backend/` — FastAPI app + templates/static (Phase 4)
