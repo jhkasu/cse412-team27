@@ -2,13 +2,19 @@
 
 Connection settings via env vars:
   PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
+
+Run: uvicorn app:app --port 5001 --reload
 """
 import os
 
-from flask import Flask, jsonify, render_template, request
-from sqlalchemy import func
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import Session, sessionmaker
 
-from models import Food, FoodCategory, FoodNutrient, db
+from models import Food, FoodCategory, FoodNutrient
 
 PG_HOST = os.environ.get("PGHOST", "localhost")
 PG_PORT = int(os.environ.get("PGPORT", 5432))
@@ -16,16 +22,28 @@ PG_USER = os.environ.get("PGUSER", os.environ.get("USER", "postgres"))
 PG_PASSWORD = os.environ.get("PGPASSWORD", "")
 PG_DATABASE = os.environ.get("PGDATABASE", "nutricompare")
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = (
+DATABASE_URL = (
     f"postgresql+psycopg2://{PG_USER}:{PG_PASSWORD}"
     f"@{PG_HOST}:{PG_PORT}/{PG_DATABASE}"
 )
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db.init_app(app)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
-def serialize_food(f):
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+app = FastAPI(title="NutriCompare")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+
+def serialize_food(f: Food) -> dict:
     return {
         "fdc_id": f.fdc_id,
         "description": f.description,
@@ -34,17 +52,16 @@ def serialize_food(f):
     }
 
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html")
 
 
-@app.route("/api/categories")
-def categories():
+@app.get("/api/categories")
+def categories(limit: int = 25, db: Session = Depends(get_db)):
     """Top categories by food count. Excludes 'Unknown' / 'Not included'."""
-    limit = int(request.args.get("limit", 25))
     rows = (
-        db.session.query(
+        db.query(
             FoodCategory.category_id,
             FoodCategory.name,
             func.count(Food.fdc_id).label("food_count"),
@@ -58,57 +75,53 @@ def categories():
         .limit(limit)
         .all()
     )
-    return jsonify([
+    return [
         {"category_id": r.category_id, "name": r.name, "food_count": r.food_count}
         for r in rows
-    ])
+    ]
 
 
-@app.route("/api/foods")
-def foods_by_category():
-    category_id = request.args.get("category_id", type=int)
-    if not category_id:
-        return jsonify({"error": "category_id required"}), 400
+@app.get("/api/foods")
+def foods_by_category(category_id: int, db: Session = Depends(get_db)):
     foods = (
-        Food.query.filter_by(category_id=category_id)
+        db.query(Food)
+        .filter(Food.category_id == category_id)
         .order_by(Food.description)
         .limit(100)
         .all()
     )
-    return jsonify([serialize_food(f) for f in foods])
+    return [serialize_food(f) for f in foods]
 
 
-@app.route("/api/search")
-def search():
-    q = (request.args.get("q") or "").strip()
+@app.get("/api/search")
+def search(q: str = "", db: Session = Depends(get_db)):
+    q = q.strip()
     if not q:
-        return jsonify([])
+        return []
     foods = (
-        Food.query.filter(Food.description.ilike(f"%{q}%"))
+        db.query(Food)
+        .filter(Food.description.ilike(f"%{q}%"))
         .order_by(Food.description)
         .limit(50)
         .all()
     )
-    return jsonify([serialize_food(f) for f in foods])
+    return [serialize_food(f) for f in foods]
 
 
-@app.route("/api/food/<int:fdc_id>")
-def food_detail(fdc_id):
-    food = db.session.get(Food, fdc_id)
+@app.get("/api/food/{fdc_id}")
+def food_detail(fdc_id: int, db: Session = Depends(get_db)):
+    food = db.get(Food, fdc_id)
     if not food:
-        return jsonify({"error": "not found"}), 404
+        raise HTTPException(status_code=404, detail="not found")
     nutrients = (
-        FoodNutrient.query.filter_by(fdc_id=fdc_id)
+        db.query(FoodNutrient)
+        .filter(FoodNutrient.fdc_id == fdc_id)
         .order_by(FoodNutrient.nutrient)
         .all()
     )
-    return jsonify({
+    return {
         **serialize_food(food),
         "nutrients": [
             {"nutrient": n.nutrient, "amount": n.amount} for n in nutrients
         ],
-    })
-
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    }

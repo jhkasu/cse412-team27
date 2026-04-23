@@ -1,57 +1,58 @@
 """SQLAlchemy models mirroring ddl/schema.sql.
 
-These models are read-only mappers — the canonical schema lives in schema.sql
-and is loaded by setup_db.py. We don't call db.create_all() here.
+The canonical schema lives in schema.sql and is loaded by setup_db.py.
+We don't call Base.metadata.create_all() here.
 """
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import (
+    Column, DateTime, Float, ForeignKey, Integer, String, func,
+)
+from sqlalchemy.orm import declarative_base, relationship
 
-db = SQLAlchemy()
+Base = declarative_base()
 
 
-class UserAccount(db.Model):
+class UserAccount(Base):
     __tablename__ = "user_account"
-    user_id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), nullable=False, unique=True)
-    password = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    user_id = Column(Integer, primary_key=True)
+    email = Column(String(255), nullable=False, unique=True)
+    password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
 
 
-class FoodCategory(db.Model):
+class FoodCategory(Base):
     __tablename__ = "food_category"
-    category_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+    category_id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
 
 
-class UserPreference(db.Model):
+class UserPreference(Base):
     __tablename__ = "user_preference"
-    preference_id = db.Column(db.Integer, primary_key=True)
-    preference_key = db.Column(db.String(255), nullable=False)
-    preference_value = db.Column(db.String(255), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user_account.user_id"))
+    preference_id = Column(Integer, primary_key=True)
+    preference_key = Column(String(255), nullable=False)
+    preference_value = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("user_account.user_id"))
 
 
-class Food(db.Model):
+class Food(Base):
     __tablename__ = "food"
-    fdc_id = db.Column(db.Integer, primary_key=True)
-    data_type = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    category_id = db.Column(
-        db.Integer, db.ForeignKey("food_category.category_id")
-    )
-    category = db.relationship("FoodCategory")
+    fdc_id = Column(Integer, primary_key=True)
+    data_type = Column(String(255), nullable=False)
+    description = Column(String(255), nullable=False)
+    category_id = Column(Integer, ForeignKey("food_category.category_id"))
+    category = relationship("FoodCategory")
 
 
-class FoodNutrient(db.Model):
+class FoodNutrient(Base):
     __tablename__ = "food_nutrient"
-    food_nutrient_id = db.Column(db.Integer, primary_key=True)
-    nutrient = db.Column(db.String(255), nullable=False)
-    amount = db.Column(db.Float)
-    fdc_id = db.Column(db.Integer, db.ForeignKey("food.fdc_id"))
+    food_nutrient_id = Column(Integer, primary_key=True)
+    nutrient = Column(String(255), nullable=False)
+    amount = Column(Float)
+    fdc_id = Column(Integer, ForeignKey("food.fdc_id"))
 
 
-class SavedComparisonFood(db.Model):
+class SavedComparisonFood(Base):
     __tablename__ = "saved_comparison_food"
-    food_comparison_id = db.Column(db.Integer, primary_key=True)
-    sort_order = db.Column(db.Integer, nullable=False)
-    fdc_id = db.Column(db.Integer, db.ForeignKey("food.fdc_id"))
-    user_id = db.Column(db.Integer, db.ForeignKey("user_account.user_id"))
+    food_comparison_id = Column(Integer, primary_key=True)
+    sort_order = Column(Integer, nullable=False)
+    fdc_id = Column(Integer, ForeignKey("food.fdc_id"))
+    user_id = Column(Integer, ForeignKey("user_account.user_id"))
