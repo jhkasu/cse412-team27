@@ -13,7 +13,7 @@ sourced from the USDA FoodData Central database.
 - `ddl/data.sql` — generated INSERT statements from USDA API (Phase 2)
 - `ddl/generate_data.py` — script that calls the USDA API and writes `data.sql`
 - `ddl/queries.sql` — sample SQL queries (Phase 3)
-- `frontend/` — Flask web application (Phase 4)
+- `frontend/` — Flask web application 
 
 ## Setup (Frontend)
 
