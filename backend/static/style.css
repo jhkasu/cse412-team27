@@ -103,6 +103,38 @@ body {
   text-align: center;
 }
 .badge.hidden { display: none; }
+
+.compare-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: #191919;
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  z-index: 50;
+}
+.compare-fab:hover { background: #000; }
+.compare-fab-icon { font-size: 18px; }
+.compare-fab-count {
+  background: #eb1700;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  min-width: 22px;
+  text-align: center;
+}
 .nav-user { position: relative; }
 .nav-user.hidden { display: none; }
 .nav-menu {

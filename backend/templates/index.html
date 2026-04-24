@@ -16,9 +16,6 @@
         <input id="search-input" type="text" placeholder="Search foods (e.g. apple, chicken, milk)" autocomplete="off">
       </div>
       <nav class="topbar-nav">
-        <button id="nav-compare" class="nav-link">
-          Compare <span id="compare-count" class="badge hidden">0</span>
-        </button>
         <button id="nav-signin" class="nav-link">Sign in</button>
         <button id="nav-signup" class="nav-link primary">Sign up</button>
         <div id="nav-user" class="nav-user hidden">
@@ -43,6 +40,12 @@
       <div id="food-grid" class="food-grid"></div>
     </section>
   </main>
+
+  <button id="compare-fab" class="compare-fab hidden">
+    <span class="compare-fab-icon">⚖️</span>
+    <span class="compare-fab-text">Compare</span>
+    <span id="compare-count" class="compare-fab-count">0</span>
+  </button>
 
   <div id="modal" class="modal hidden">
     <div class="modal-backdrop"></div>

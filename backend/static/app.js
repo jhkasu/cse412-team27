@@ -194,20 +194,17 @@ async function addToCompare(fdc_id) {
 }
 
 async function refreshCompareCount() {
+  const fab = $("#compare-fab");
   const badge = $("#compare-count");
-  if (!currentUser) { badge.classList.add("hidden"); badge.textContent = "0"; return; }
+  if (!currentUser) { fab.classList.add("hidden"); return; }
   try {
     const res = await fetch(`/api/comparison?user_id=${currentUser.user_id}`);
     if (!res.ok) throw new Error();
     const items = await res.json();
-    if (items.length) {
-      badge.textContent = items.length;
-      badge.classList.remove("hidden");
-    } else {
-      badge.classList.add("hidden");
-    }
+    badge.textContent = items.length;
+    fab.classList.remove("hidden");
   } catch {
-    badge.classList.add("hidden");
+    fab.classList.add("hidden");
   }
 }
 
@@ -401,7 +398,7 @@ $("#auth-switch").addEventListener("click", () =>
 );
 $("#auth-form").addEventListener("submit", submitAuth);
 $("#settings-form").addEventListener("submit", submitSettings);
-$("#nav-compare").addEventListener("click", openCompare);
+$("#compare-fab").addEventListener("click", openCompare);
 $("#nav-settings").addEventListener("click", () => {
   $("#nav-user-menu").classList.add("hidden");
   openSettings();
