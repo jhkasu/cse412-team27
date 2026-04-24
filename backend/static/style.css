@@ -1,4 +1,5 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
+.hidden { display: none !important; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -64,6 +65,74 @@ body {
   padding: 10px 16px;
   border-radius: 999px;
 }
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.nav-link {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #191919;
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-link:hover { background: #f3f3f3; }
+.nav-link.primary {
+  background: #eb1700;
+  color: #fff;
+}
+.nav-link.primary:hover { background: #c81300; }
+.badge {
+  background: #eb1700;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
+.badge.hidden { display: none; }
+.nav-user { position: relative; }
+.nav-user.hidden { display: none; }
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+  min-width: 160px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+.nav-menu.hidden { display: none; }
+.nav-menu button {
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #191919;
+}
+.nav-menu button:hover { background: #f3f3f3; }
 
 /* ---------- Main ---------- */
 main {
@@ -247,3 +316,133 @@ main {
   font-weight: 600;
   white-space: nowrap;
 }
+
+.modal-narrow .modal-content,
+.modal-content.modal-narrow { max-width: 420px; }
+.modal-content.modal-wide { max-width: 1100px; }
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a4a4a;
+}
+.form input,
+.form select {
+  font-family: inherit;
+  font-size: 15px;
+  padding: 11px 14px;
+  border: 1px solid #d8d8d8;
+  border-radius: 10px;
+  background: #fff;
+  color: #191919;
+  outline: none;
+}
+.form input:focus,
+.form select:focus { border-color: #191919; }
+.btn-primary {
+  background: #eb1700;
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.btn-primary:hover { background: #c81300; }
+.btn-primary:disabled { background: #b8b8b8; cursor: not-allowed; }
+.btn-secondary {
+  background: #f3f3f3;
+  color: #191919;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.btn-secondary:hover { background: #ececec; }
+.form-error {
+  background: #fff1ee;
+  color: #c81300;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.form-error.hidden { display: none; }
+.form-switch {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #767676;
+  text-align: center;
+}
+.link-button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #eb1700;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.link-button:hover { text-decoration: underline; }
+
+.modal-action-row {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 4px;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+.compare-table th,
+.compare-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ececec;
+  text-align: left;
+  vertical-align: top;
+}
+.compare-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4a4a4a;
+  background: #fafafa;
+  position: sticky;
+  top: 0;
+}
+.compare-table td.numeric,
+.compare-table th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.compare-remove {
+  background: none;
+  border: none;
+  color: #eb1700;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.compare-remove:hover { text-decoration: underline; }

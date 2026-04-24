@@ -15,6 +15,20 @@
         <span class="search-icon">🔍</span>
         <input id="search-input" type="text" placeholder="Search foods (e.g. apple, chicken, milk)" autocomplete="off">
       </div>
+      <nav class="topbar-nav">
+        <button id="nav-compare" class="nav-link">
+          Compare <span id="compare-count" class="badge hidden">0</span>
+        </button>
+        <button id="nav-signin" class="nav-link">Sign in</button>
+        <button id="nav-signup" class="nav-link primary">Sign up</button>
+        <div id="nav-user" class="nav-user hidden">
+          <button id="nav-user-button" class="nav-link"><span id="nav-user-email"></span> ▾</button>
+          <div id="nav-user-menu" class="nav-menu hidden">
+            <button id="nav-settings">Settings</button>
+            <button id="nav-signout">Sign out</button>
+          </div>
+        </div>
+      </nav>
     </div>
   </header>
 
@@ -30,12 +44,78 @@
     </section>
   </main>
 
-  <!-- Food detail modal -->
   <div id="modal" class="modal hidden">
     <div class="modal-backdrop"></div>
     <div class="modal-content">
       <button id="modal-close" class="modal-close">×</button>
       <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-narrow">
+      <button class="modal-close" data-close="auth-modal">×</button>
+      <h3 id="auth-title">Sign in</h3>
+      <div id="auth-error" class="form-error hidden"></div>
+      <form id="auth-form" class="form">
+        <label>
+          Email
+          <input type="email" name="email" required autocomplete="email">
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" required minlength="4" autocomplete="current-password">
+        </label>
+        <button type="submit" class="btn-primary" id="auth-submit">Sign in</button>
+      </form>
+      <div class="form-switch">
+        <span id="auth-switch-text">New here?</span>
+        <button id="auth-switch" class="link-button">Create an account</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-narrow">
+      <button class="modal-close" data-close="settings-modal">×</button>
+      <h3>Settings</h3>
+      <p class="modal-meta">Preferences are stored per account.</p>
+      <div id="settings-error" class="form-error hidden"></div>
+      <form id="settings-form" class="form">
+        <label>
+          Daily calorie target
+          <input type="number" name="calorie_target" min="0" placeholder="e.g. 2000">
+        </label>
+        <label>
+          Diet
+          <select name="diet">
+            <option value="">No preference</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="keto">Keto</option>
+            <option value="low_sodium">Low sodium</option>
+          </select>
+        </label>
+        <label>
+          Allergies (comma separated)
+          <input type="text" name="allergies" placeholder="e.g. peanuts, dairy">
+        </label>
+        <button type="submit" class="btn-primary">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="compare-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-wide">
+      <button class="modal-close" data-close="compare-modal">×</button>
+      <h3>Comparison</h3>
+      <p class="modal-meta">Side-by-side nutrient view of saved foods.</p>
+      <div id="compare-body">
+        <div class="empty">No foods saved yet. Open a food and click "Add to comparison".</div>
+      </div>
     </div>
   </div>
 
