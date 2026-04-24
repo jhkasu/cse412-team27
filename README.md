@@ -30,5 +30,5 @@ uvicorn app:app --port 5001 --reload
 Open http://127.0.0.1:5001 (and http://127.0.0.1:5001/docs for the Swagger UI).
 
 ## Files
-- `ddl/` — schema, data, queries (Phase 1–3)
-- `backend/` — FastAPI app + templates/static (Phase 4)
+- `ddl/` — schema, data, queries (Phase 1, 2)
+- `backend/` — FastAPI app + templates/static (Phase 3)
