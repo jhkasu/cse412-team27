@@ -478,3 +478,55 @@ main {
   padding: 0;
 }
 .compare-remove:hover { text-decoration: underline; }
+
+.variant-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #191919;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  z-index: 1;
+}
+.variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.variant-row {
+  background: #f6f6f6;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #191919;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.variant-row:hover { background: #ececec; }
+.variant-arrow { color: #767676; font-size: 16px; }
+
+.category-tile.blocked {
+  opacity: 0.3;
+  filter: grayscale(0.8);
+}
+.category-tile.blocked:hover { background: transparent; }
+
+.allergy-warning {
+  background: #fff1ee;
+  color: #c81300;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}

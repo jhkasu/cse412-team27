@@ -61,6 +61,40 @@ const $$ = (sel) => document.querySelectorAll(sel);
 let activeCategoryId = null;
 let currentUser = null;
 let authMode = "signin";
+let userPrefs = { diet: "", allergies: [] };
+
+const DIET_BLOCKED_CATEGORIES = {
+  vegetarian: [/poultry|chicken|turkey/i, /beef|pork|meat|sausage/i, /fish|seafood|shrimp/i],
+  vegan:      [/poultry|chicken|turkey/i, /beef|pork|meat|sausage/i, /fish|seafood|shrimp/i,
+               /dairy|milk/i, /yogurt/i, /cheese/i, /egg/i],
+  keto:       [],
+  low_sodium: [],
+};
+
+async function loadUserPrefs() {
+  if (!currentUser) { userPrefs = { diet: "", allergies: [] }; return; }
+  try {
+    const res = await fetch(`/api/preferences?user_id=${currentUser.user_id}`);
+    if (!res.ok) throw new Error();
+    const prefs = await res.json();
+    const map = {};
+    prefs.forEach((p) => (map[p.preference_key] = p.preference_value));
+    userPrefs = {
+      diet: map.diet || "",
+      allergies: (map.allergies || "")
+        .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
+    };
+  } catch {
+    userPrefs = { diet: "", allergies: [] };
+  }
+}
+
+function allergyWarning(description) {
+  const desc = String(description || "").toLowerCase();
+  const hits = userPrefs.allergies.filter((a) => a && desc.includes(a));
+  if (!hits.length) return "";
+  return `<div class="allergy-warning">⚠️ Contains: ${escapeHtml(hits.join(", "))}</div>`;
+}
 
 function getStoredUser() {
   try { return JSON.parse(localStorage.getItem("nc_user") || "null"); }
@@ -72,6 +106,7 @@ function setStoredUser(u) {
   currentUser = u;
   renderAuthState();
   refreshCompareCount();
+  loadUserPrefs().then(() => loadCategories());
 }
 
 function renderAuthState() {
@@ -105,6 +140,9 @@ async function loadCategories() {
     const tile = document.createElement("div");
     tile.className = "category-tile";
     tile.dataset.id = c.category_id;
+    const blocked = (DIET_BLOCKED_CATEGORIES[userPrefs.diet] || [])
+      .some((re) => re.test(c.name));
+    if (blocked) tile.classList.add("blocked");
     tile.innerHTML = `
       <div class="icon">${emojiFor(c.name)}</div>
       <div class="label">${escapeHtml(c.name)}</div>
@@ -126,25 +164,65 @@ async function selectCategory(cat) {
   renderFoods(await res.json(), cat.name);
 }
 
+function groupFoodsByBase(foods, fallbackCategory) {
+  const groups = new Map();
+  foods.forEach((f) => {
+    const cat = f.category_name || fallbackCategory || "";
+    const pretty = prettifyName(f.description, cat);
+    const idx = pretty.lastIndexOf(" — ");
+    const base = idx > 0 ? pretty.slice(0, idx) : pretty;
+    const variant = idx > 0 ? pretty.slice(idx + 3) : null;
+    if (!groups.has(base)) groups.set(base, { base, cat, items: [] });
+    groups.get(base).items.push({ ...f, _variant: variant, _pretty: pretty });
+  });
+  return [...groups.values()];
+}
+
 function renderFoods(foods, fallbackCategory) {
   const grid = $("#food-grid");
   if (!foods.length) {
     grid.innerHTML = `<div class="empty">No foods found.</div>`;
     return;
   }
+  const groups = groupFoodsByBase(foods, fallbackCategory);
   grid.innerHTML = "";
-  foods.forEach((f) => {
+  groups.forEach((g) => {
     const card = document.createElement("div");
     card.className = "food-card";
-    const cat = f.category_name || fallbackCategory || "";
+    const badge = g.items.length > 1
+      ? `<div class="variant-badge">${g.items.length} variants</div>`
+      : "";
     card.innerHTML = `
-      <div class="name">${escapeHtml(prettifyName(f.description, cat))}</div>
-      <div class="meta">${escapeHtml(cat)}</div>
-      <div class="emoji">${emojiFor(cat)}</div>
+      <div class="name">${escapeHtml(g.base)}</div>
+      <div class="meta">${escapeHtml(g.cat)}</div>
+      ${badge}
+      <div class="emoji">${emojiFor(g.cat)}</div>
     `;
-    card.addEventListener("click", () => openFoodDetail(f.fdc_id));
+    card.addEventListener("click", () => {
+      if (g.items.length === 1) openFoodDetail(g.items[0].fdc_id);
+      else openVariantPicker(g);
+    });
     grid.appendChild(card);
   });
+}
+
+function openVariantPicker(group) {
+  $("#modal-body").innerHTML = `
+    <h3>${escapeHtml(group.base)}</h3>
+    <div class="modal-meta">${escapeHtml(group.cat)} · ${group.items.length} variants</div>
+    <div class="variant-list">
+      ${group.items.map((it) => `
+        <button class="variant-row" data-fdc="${it.fdc_id}">
+          <span>${escapeHtml(it._variant || it._pretty)}</span>
+          <span class="variant-arrow">→</span>
+        </button>
+      `).join("")}
+    </div>
+  `;
+  openModal("modal");
+  $$(".variant-row").forEach((b) =>
+    b.addEventListener("click", () => openFoodDetail(Number(b.dataset.fdc)))
+  );
 }
 
 async function openFoodDetail(fdc_id) {
@@ -157,6 +235,7 @@ async function openFoodDetail(fdc_id) {
     .map((n) => `<tr><td>${escapeHtml(n.nutrient)}</td><td>${formatAmount(n.amount)}</td></tr>`)
     .join("");
   $("#modal-body").innerHTML = `
+    ${allergyWarning(data.description)}
     <h3>${escapeHtml(prettifyName(data.description, data.category_name))}</h3>
     <div class="modal-meta">${escapeHtml(data.category_name || "")} · ${escapeHtml(data.data_type)} · FDC ID ${data.fdc_id}</div>
     <div class="modal-action-row">
@@ -286,7 +365,6 @@ async function openSettings() {
     const map = {};
     prefs.forEach((p) => (map[p.preference_key] = p.preference_value));
     const form = $("#settings-form");
-    if (map.calorie_target) form.calorie_target.value = map.calorie_target;
     if (map.diet) form.diet.value = map.diet;
     if (map.allergies) form.allergies.value = map.allergies;
   } catch {}
@@ -325,7 +403,6 @@ async function submitSettings(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const prefs = [
-    { preference_key: "calorie_target", preference_value: fd.get("calorie_target") || "" },
     { preference_key: "diet", preference_value: fd.get("diet") || "" },
     { preference_key: "allergies", preference_value: fd.get("allergies") || "" },
   ].filter((p) => p.preference_value !== "");
@@ -339,6 +416,8 @@ async function submitSettings(e) {
     });
     if (!res.ok) throw new Error(await res.text() || "Save failed");
     closeModal("settings-modal");
+    await loadUserPrefs();
+    loadCategories();
   } catch (err) {
     errBox.textContent = err.message;
     errBox.classList.remove("hidden");
@@ -417,4 +496,4 @@ document.addEventListener("click", (e) => {
 currentUser = getStoredUser();
 renderAuthState();
 refreshCompareCount();
-loadCategories();
+loadUserPrefs().then(() => loadCategories());
