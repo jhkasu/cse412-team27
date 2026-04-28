@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import os
 import secrets
+from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -17,7 +18,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
-from models import Food, FoodCategory, FoodNutrient, UserAccount
+from models import (
+    Food, FoodCategory, FoodNutrient, UserAccount,
+    UserPreference, SavedComparisonFood,
+)
 
 try:
     from pydantic import BaseModel, EmailStr
@@ -183,3 +187,115 @@ def food_detail(fdc_id: int, db: Session = Depends(get_db)):
             {"nutrient": n.nutrient, "amount": n.amount} for n in nutrients
         ],
     }
+
+
+class PreferenceItem(BaseModel):
+    preference_key: str
+    preference_value: str
+
+
+class PreferencesPayload(BaseModel):
+    preferences: List[PreferenceItem]
+
+
+@app.get("/api/preferences")
+def get_preferences(user_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(UserPreference)
+        .filter(UserPreference.user_id == user_id)
+        .all()
+    )
+    return [
+        {"preference_key": r.preference_key, "preference_value": r.preference_value}
+        for r in rows
+    ]
+
+
+@app.put("/api/preferences")
+def put_preferences(
+    user_id: int,
+    payload: PreferencesPayload,
+    db: Session = Depends(get_db),
+):
+    db.query(UserPreference).filter(UserPreference.user_id == user_id).delete()
+    for p in payload.preferences:
+        db.add(UserPreference(
+            user_id=user_id,
+            preference_key=p.preference_key,
+            preference_value=p.preference_value,
+        ))
+    db.commit()
+    return {"ok": True}
+
+
+class ComparisonAdd(BaseModel):
+    fdc_id: int
+    user_id: int
+
+
+@app.get("/api/comparison")
+def get_comparison(user_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(SavedComparisonFood)
+        .filter(SavedComparisonFood.user_id == user_id)
+        .order_by(SavedComparisonFood.sort_order)
+        .all()
+    )
+    result = []
+    for row in rows:
+        food = db.get(Food, row.fdc_id)
+        if not food:
+            continue
+        nuts = (
+            db.query(FoodNutrient)
+            .filter(FoodNutrient.fdc_id == food.fdc_id)
+            .all()
+        )
+        result.append({
+            **serialize_food(food),
+            "nutrients": [{"nutrient": n.nutrient, "amount": n.amount} for n in nuts],
+        })
+    return result
+
+
+@app.post("/api/comparison")
+def add_to_comparison(payload: ComparisonAdd, db: Session = Depends(get_db)):
+    existing = (
+        db.query(SavedComparisonFood)
+        .filter(
+            SavedComparisonFood.user_id == payload.user_id,
+            SavedComparisonFood.fdc_id == payload.fdc_id,
+        )
+        .first()
+    )
+    if existing:
+        return {"ok": True, "already_added": True}
+    max_order = (
+        db.query(func.max(SavedComparisonFood.sort_order))
+        .filter(SavedComparisonFood.user_id == payload.user_id)
+        .scalar()
+    ) or 0
+    row = SavedComparisonFood(
+        user_id=payload.user_id,
+        fdc_id=payload.fdc_id,
+        sort_order=max_order + 1,
+    )
+    db.add(row)
+    db.commit()
+    return {"ok": True}
+
+
+@app.delete("/api/comparison/{fdc_id}")
+def remove_from_comparison(fdc_id: int, user_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(SavedComparisonFood)
+        .filter(
+            SavedComparisonFood.user_id == user_id,
+            SavedComparisonFood.fdc_id == fdc_id,
+        )
+        .all()
+    )
+    for r in rows:
+        db.delete(r)
+    db.commit()
+    return {"ok": True}
