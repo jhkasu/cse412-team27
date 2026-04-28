@@ -127,6 +127,11 @@ function openAuth(mode) {
   $("#auth-switch-text").textContent = mode === "signup" ? "Already have an account?" : "New here?";
   $("#auth-switch").textContent = mode === "signup" ? "Sign in" : "Create an account";
   $("#auth-form").reset();
+  const passwordInput = $("#auth-form input[name='password']");
+  passwordInput.setAttribute(
+    "autocomplete",
+    mode === "signup" ? "new-password" : "current-password"
+  );
   $("#auth-error").classList.add("hidden");
   openModal("auth-modal");
 }
@@ -385,8 +390,15 @@ async function submitAuth(e) {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(txt || "Request failed");
+      let msg = "Request failed";
+      try {
+        const err = await res.json();
+        msg = err.detail || msg;
+      } catch {
+        const txt = await res.text();
+        if (txt) msg = txt;
+      }
+      throw new Error(msg);
     }
     const user = await res.json();
     setStoredUser(user);

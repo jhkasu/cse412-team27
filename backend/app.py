@@ -5,7 +5,10 @@ Connection settings via env vars:
 
 Run: uvicorn app:app --port 5001 --reload
 """
+import hashlib
+import hmac
 import os
+import secrets
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -14,7 +17,12 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
-from models import Food, FoodCategory, FoodNutrient
+from models import Food, FoodCategory, FoodNutrient, UserAccount
+
+try:
+    from pydantic import BaseModel, EmailStr
+except ImportError:
+    from pydantic.v1 import BaseModel, EmailStr
 
 PG_HOST = os.environ.get("PGHOST", "localhost")
 PG_PORT = int(os.environ.get("PGPORT", 5432))
@@ -43,6 +51,30 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+class AuthRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
+    return f"{salt.hex()}:{digest.hex()}"
+
+
+def _verify_password(password: str, encoded: str) -> bool:
+    parts = encoded.split(":", 1)
+    if len(parts) != 2:
+        return False
+    salt_hex, digest_hex = parts
+    try:
+        salt = bytes.fromhex(salt_hex)
+    except ValueError:
+        return False
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
+    return hmac.compare_digest(digest.hex(), digest_hex)
+
+
 def serialize_food(f: Food) -> dict:
     return {
         "fdc_id": f.fdc_id,
@@ -55,6 +87,32 @@ def serialize_food(f: Food) -> dict:
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
+
+
+@app.post("/api/signup")
+def signup(payload: AuthRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    password = payload.password or ""
+    if len(password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters.")
+    exists = db.query(UserAccount).filter(UserAccount.email == email).first()
+    if exists:
+        raise HTTPException(status_code=409, detail="Email already registered.")
+    user = UserAccount(email=email, password=_hash_password(password))
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"user_id": user.user_id, "email": user.email}
+
+
+@app.post("/api/signin")
+def signin(payload: AuthRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    password = payload.password or ""
+    user = db.query(UserAccount).filter(UserAccount.email == email).first()
+    if not user or not _verify_password(password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    return {"user_id": user.user_id, "email": user.email}
 
 
 @app.get("/api/categories")
