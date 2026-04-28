@@ -4,3 +4,4 @@ sqlalchemy>=2.0
 psycopg2-binary>=2.9
 jinja2>=3.1
 requests>=2.31
+email-validator>=2.0
